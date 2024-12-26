@@ -51,13 +51,18 @@ public class GeradorDeSenhasGUI extends Application {
 		            alert.setTitle("Senha Gerada");
 		            alert.setHeaderText("Senha gerada com sucesso!");
 		            alert.setContentText("A senha gerada é: " + senha);
-		            alert.showAndWait(); // Exibe o diálogo e espera o usuário fechar
+		            alert.showAndWait();
 
-		            // Atualiza o TextArea com as senhas salvas
+		            // Atualiza automaticamente o TextArea
 		            areaSenhasSalvas.clear();
 		            for (String linha : GeradorDeSenhas.lerSenhas()) {
 		                areaSenhasSalvas.appendText(linha + System.lineSeparator());
 		            }
+
+		            // Limpa os campos de entrada
+		            campoLugarSenha.clear();
+		            campoTamanhoSenha.clear();
+		            campoTamanhoSenha.setText("8"); // Sugestão padrão
 		        } else {
 		            Alert alert = new Alert(Alert.AlertType.ERROR, "Por favor, insira o nome do lugar.");
 		            alert.show();

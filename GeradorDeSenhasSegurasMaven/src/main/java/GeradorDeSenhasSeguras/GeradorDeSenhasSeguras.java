@@ -1,5 +1,6 @@
+package GeradorDeSenhasSeguras;
+
 import java.security.SecureRandom;
-import java.util.Scanner;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,14 +9,31 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
-public class GeradorDeSenhas {
+public class GeradorDeSenhasSeguras {
 
     private static final String CARACTERES = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*()_+=-[],./?><";
-    private static final String CAMINHO_ARQUIVO = "senhas.txt";
+    private static final String CAMINHO_ARQUIVO = "senhas.json";
     private static final String CHAVE_ARQUIVO = "chave.aes";
 
-    // Gera uma senha aleatória
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Modelo de senha
+    public static class RegistroSenha {
+        public String servico;
+        public String senha;
+
+        public RegistroSenha() {} // Construtor padrão para o Jackson
+
+        public RegistroSenha(String servico, String senha) {
+            this.servico = servico;
+            this.senha = senha;
+        }
+    }
+
+    // Gera uma senha aleatoria
     public static String gerarSenha(int comprimento) {
         SecureRandom geradorDeNumeroAleatorio = new SecureRandom();
         StringBuilder senha = new StringBuilder(comprimento);
@@ -44,7 +62,7 @@ public class GeradorDeSenhas {
         return new String(textoDescriptografado);
     }
 
-    // Gera ou lê a chave secreta para criptografia
+    // Gera ou le a chave secreta para criptografia
     public static SecretKey obterChaveSecreta() throws Exception {
         File arquivoChave = new File(CHAVE_ARQUIVO);
         if (!arquivoChave.exists()) {
@@ -64,44 +82,35 @@ public class GeradorDeSenhas {
         }
     }
 
-    // Salva uma senha criptografada
-    public static void salvarSenha(String lugar, String senha) {
+    // Lê o arquivo JSON e retorna a lista de senhas descriptografadas
+    public static List<RegistroSenha> lerSenhas() {
+        File arquivo = new File(CAMINHO_ARQUIVO);
+        if (!arquivo.exists()) {
+            return new ArrayList<>();
+        }
         try {
             SecretKey chave = obterChaveSecreta();
-            String senhaCriptografada = criptografar(senha, chave);
-
-            File arquivo = new File(CAMINHO_ARQUIVO);
-            if (!arquivo.exists()) {
-                arquivo.createNewFile();
+            List<RegistroSenha> registros = objectMapper.readValue(arquivo, new TypeReference<List<RegistroSenha>>() {});
+            for (RegistroSenha registro : registros) {
+                registro.senha = descriptografar(registro.senha, chave);
             }
-            try (FileWriter escritor = new FileWriter(arquivo, true)) {
-                escritor.write(lugar + ", " + senhaCriptografada + System.lineSeparator());
-            }
+            return registros;
         } catch (Exception e) {
-            System.out.println("Erro ao salvar a senha: " + e.getMessage());
+            System.out.println("Erro ao ler o arquivo JSON: " + e.getMessage());
+            return new ArrayList<>();
         }
     }
 
-    // Lê as senhas descriptografadas
-    public static List<String> lerSenhas() {
-        List<String> senhas = new ArrayList<>();
+    // Salva uma senha criptografada no arquivo JSON
+    public static void salvarSenha(String lugar, String senha) {
+        List<RegistroSenha> senhas = lerSenhas(); // Carrega as senhas existentes
         try {
             SecretKey chave = obterChaveSecreta();
-            try (BufferedReader leitor = new BufferedReader(new FileReader(CAMINHO_ARQUIVO))) {
-                String linha;
-                while ((linha = leitor.readLine()) != null) {
-                    String[] partes = linha.split(", ");
-                    if (partes.length == 2) {
-                        String lugar = partes[0];
-                        String senhaCriptografada = partes[1];
-                        String senhaDescriptografada = descriptografar(senhaCriptografada, chave);
-                        senhas.add(lugar + ": " + senhaDescriptografada);
-                    }
-                }
-            }
+            String senhaCriptografada = criptografar(senha, chave);
+            senhas.add(new RegistroSenha(lugar, senhaCriptografada)); // Adiciona a nova senha
+            objectMapper.writeValue(new File(CAMINHO_ARQUIVO), senhas); // Salva a lista no arquivo JSON
         } catch (Exception e) {
-            System.out.println("Erro ao ler as senhas: " + e.getMessage());
+            System.out.println("Erro ao salvar no arquivo JSON: " + e.getMessage());
         }
-        return senhas;
     }
 }
