@@ -34,6 +34,23 @@ public class SistemaDeInformacoesClimaticas {
         return response.body();
     }
 
+    public static String getCidadePorIP() throws Exception {
+        String apiUrl = "http://ip-api.com/json/";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(apiUrl))
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        JSONObject jsonResponse = new JSONObject(response.body());
+        if (jsonResponse.has("city")) {
+            return jsonResponse.getString("city");
+        } else {
+            throw new JSONException("Não foi possível determinar a cidade pelo IP.");
+        }
+    }
+
     public static String imprimirDadosClimaticos(String dados) {
         JSONObject dadosJson = new JSONObject(dados);
         if (!dadosJson.has("current") || !dadosJson.has("location")) {

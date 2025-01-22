@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: vendas-service
+  cloud:
+    config:
+      uri: http://localhost:8888
+      fail-fast: true
+  profiles:
+    active: default
+
+spring.config.import: "configserver:"
+
+server:
+  port: 8083
+
+cliente-service:
+  url: http://localhost:8081/clientes
+
+produto-service:
+  url: http://localhost:8082/produtos
+
